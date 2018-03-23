@@ -35,12 +35,25 @@ class Year:
 		else:
 			return False
 
-	def getSeedDiffSum(self, tiers):
+	def getSeedDiffSum(self, tierList):
 		sum = 0
-		for ii in tiers:
+		for ii in tierList:
 			if ii in self.tiers.keys():
 				tier = self.tiers[ii]
 				sum += tier.seed_diff_sum
+		return sum
+
+	def getUpsetSum(self, tierList, weights):
+		sum = 0
+		for t in tierList:
+			if t in self.tiers.keys():
+				tier = self.tiers[t]
+				for m in tier.matchups:
+					if m.loser_seed in weights[m.winner_seed].keys():
+						#print(weights[m.winner_seed][m.loser_seed])
+						sum += weights[m.winner_seed][m.loser_seed]['weight']
+					else:
+						sum += 1
 		return sum
 
 
