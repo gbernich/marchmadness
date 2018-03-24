@@ -1,3 +1,4 @@
+# Object holds winning and losing team names and seeds
 class Matchup:
 	def __init__(self, winner_name, winner_seed, loser_name, loser_seed):
 		self.winner_name = winner_name
@@ -5,67 +6,54 @@ class Matchup:
 		self.loser_name  = loser_name
 		self.loser_seed  = loser_seed
 
-		self.seed_diff   = int(self.winner_seed) - int(self.loser_seed)
 
-
-class Tier:
+# Object holds all of the matchups within its Tier (round)
+# Synonomous with "Round", using Tier because "round" is a python keyword
+class Tier: 
 	def __init__(self, number):
 		self.number   = number
 		self.matchups = []
-		self.seed_diff_sum = 0
 
 	def addMatchup(self, matchup):
 		self.matchups.append(matchup)
-		self.seed_diff_sum += matchup.seed_diff
-		m = matchup
-		# print(m.winner_seed, m.winner_name, ',', m.loser_seed, m.loser_name, ',', m.seed_diff)
 
 
+# Object holds all of the Tiers (rounds) within the Year's tournament
+# Its Tiers can be accessed in a loop with year.tierList or directly with year.tierDict['year']
 class Year:
 	def __init__(self, number):
-		self.number = number
-		self.tiers  = {}
+		self.number      = number
+		self.tierList    = []
+		self.tierDict    = {}
+		self.tierNumbers = []
 
 	def addTier(self, tier):
-		self.tiers[tier.number] = tier
+		self.tierList.append(tier)
+		self.tierDict[tier.number] = tier
+		self.tierNumbers.append(tier.number)
 
 	def hasTier(self, number):
-		if number in self.tiers.keys():
+		if number in self.tierNumbers:
 			return True
 		else:
 			return False
 
-	def getSeedDiffSum(self, tierList):
-		sum = 0
-		for ii in tierList:
-			if ii in self.tiers.keys():
-				tier = self.tiers[ii]
-				sum += tier.seed_diff_sum
-		return sum
 
-	def getUpsetSum(self, tierList, weights):
-		sum = 0
-		for t in tierList:
-			if t in self.tiers.keys():
-				tier = self.tiers[t]
-				for m in tier.matchups:
-					if m.loser_seed in weights[m.winner_seed].keys():
-						#print(weights[m.winner_seed][m.loser_seed])
-						sum += weights[m.winner_seed][m.loser_seed]['weight']
-					else:
-						sum += 1
-		return sum
-
-
+# Object holds all of the Years within the Dataset
+# Its Years can be accessed in a loop with data.yearList or directly with data.yearDict['year']
 class Dataset:
 	def __init__(self):
-		self.years = {}
+		self.yearList    = []
+		self.yearDict    = {}
+		self.yearNumbers = []
 
 	def addYear(self, year):
-		self.years[year.number] = year
+		self.yearList.append(year)
+		self.yearDict[year.number] = year
+		self.yearNumbers.append(year.number)
 
 	def hasYear(self, number):
-		if number in self.years.keys():
+		if number in self.yearNumbers:
 			return True
 		else:
 			return False

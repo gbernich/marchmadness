@@ -2,10 +2,8 @@ from bs4 import BeautifulSoup
 import sys
 import numpy
 
-from objects import Matchup
-from objects import Tier
-from objects import Year
-from objects import Dataset
+from objects import *
+
 
 TIERS = { 'First Round'           : '64',
           'Second Round'          : '32',
@@ -15,6 +13,7 @@ TIERS = { 'First Round'           : '64',
           'National Championship' :  '2'
         }
 
+# Parse the HTML data of every tournament game
 def parseData(fn):
 
 	fp   = open(fn, 'r')
@@ -29,6 +28,8 @@ def parseData(fn):
 	records = {}
 
 	# Loop trough all raw matchups
+	yIdx = -1
+	tIdx = -1
 	for game in tmp:
 
 		try:
@@ -50,32 +51,17 @@ def parseData(fn):
 				if not data.hasYear(year):
 					newYear = Year(year)
 					data.addYear(newYear)
-					# print(newYear.number)
+					yIdx += 1
+					tIdx  = -1
 
-				if not data.years[year].hasTier(tier):
+				if not data.yearList[yIdx].hasTier(tier):
 					newTier = Tier(tier)
-					data.years[year].addTier(newTier)
-					# print(newTier.number)
+					data.yearList[yIdx].addTier(newTier)
+					tIdx += 1
 
-				data.years[year].tiers[tier].addMatchup(newMatchup)
-				#print(newMatchup.winner_name)
+				#data.yearList[yIdx].tierList[tIdx].addMatchup(newMatchup)
+				data.yearDict[year].tierDict[tier].addMatchup(newMatchup)
 
-				# # Update the records
-				# if winner_seed not in records.keys():
-				# 	records[winner_seed] = {}
-				# if loser_seed not in records[winner_seed].keys():
-				# 	records[winner_seed][loser_seed] = {'wins' : 0, 'losses' : 0}
-
-				# if loser_seed not in records.keys():
-				# 	records[loser_seed] = {}
-				# if winner_seed not in records[loser_seed].keys():
-				# 	records[loser_seed][winner_seed] = {'wins' : 0, 'losses' : 0, 'weight' : 0}
-
-				# records[winner_seed][loser_seed]['wins']   += 1
-				# records[loser_seed][winner_seed]['losses'] += 1
-				# records[winner_seed][loser_seed]['weight'] = records[winner_seed][loser_seed]['losses'] / (records[winner_seed][loser_seed]['wins'] + records[winner_seed][loser_seed]['losses'])
-				# records[loser_seed][winner_seed]['weight'] = records[loser_seed][winner_seed]['losses'] / (records[loser_seed][winner_seed]['wins'] + records[loser_seed][winner_seed]['losses'])
-		
 		except Exception as e:
 			#print('SKIP')
 			#print(game)
@@ -91,12 +77,12 @@ def getProbabilityOfOutcomes(data, excludeYears):
 	# Start by adding up the records of one seed against another
 	records = {}
 
-	for y in data.years.keys():
-		if y in excludeYears:
+	for year in data.yearList:
+		if year.number in excludeYears:
 			continue
-		year = data.years[y]
-		for t in year.tiers.keys():
-			tier = year.tiers[t]
+		#year = data.yearList[y]
+		for tier in year.tierList:
+			#tier = year.tierList[t]
 			for m in tier.matchups:
 
 				if m.winner_seed not in records.keys():
@@ -144,44 +130,29 @@ def getProbabilityOfOutcomes(data, excludeYears):
 
 	return prob
 
+
 def getStatistics(data, prob, includeTiers):
 
 	stats = {}
+	means = []
 
-	for y in data.years.keys():
-		year = data.years[y]
-		stats[y] = {'scores':[], 'mean':0, 'std':0}
-		for t in year.tiers.keys():
-			if t in includeTiers:
-				tier = year.tiers[t]
+	# Calculate the mean and stdev for each year
+	for year in data.yearList:
+		stats[year.number] = {'scores':[], 'mean':0, 'std':0, 'zscore':0}
+		for tier in year.tierList:
+			if tier.number in includeTiers:
 				for m in tier.matchups:
 					score = 1.0 - prob[m.winner_seed][m.loser_seed]
-					stats[y]['scores'].append(score)
-					stats[y]['mean'] = numpy.mean(stats[y]['scores'])
-					stats[y]['std']  = numpy.std( stats[y]['scores'])
+					stats[year.number]['scores'].append(score)
+					stats[year.number]['mean'] = numpy.mean(stats[year.number]['scores'])
+					stats[year.number]['std']  = numpy.std( stats[year.number]['scores'])
+		means.append(stats[year.number]['mean'])
 
+	# Now get the z-score for each year
+	for year in data.yearList:
+		for tier in year.tierList:
+			if tier.number in includeTiers:
+				for m in tier.matchups:
+					stats[year.number]['zscore'] = (stats[year.number]['mean'] - numpy.mean(means)) / numpy.std(means)
+	
 	return stats
-
-# # Print results for each year
-# diffs = []
-# for ii in data.years.keys():
-# 	year = data.years[ii]
-# 	#print(year.number, year.getSeedDiffSum(['64','32']))
-# 	#diffs.append(year.getSeedDiffSum(['64','32']))
-# 	x = year.getUpsetSum(['64','32'], records) / 48
-# 	diffs.append(x)
-# 	s = '%s %.4f' % (ii, x)
-# 	print(s)
-
-
-# # Statistics
-# diff_mean = numpy.mean(diffs)
-# s = '\nmean:   %.4f' % diff_mean
-# print(s)
-
-# diff_std = numpy.median(diffs)
-# s = 'median: %.4f\n' % diff_std
-# print(s)
-
-# print(records['5']['12']['wins'], records['5']['12']['losses'])
-# print(records['12']['5']['wins'], records['12']['5']['losses'])
