@@ -2,10 +2,7 @@ import sys
 
 from utilities import *
 
-from objects import Matchup
-from objects import Tier
-from objects import Year
-from objects import Dataset
+from objects import *
 
 # Get data source
 if len(sys.argv) > 1:
